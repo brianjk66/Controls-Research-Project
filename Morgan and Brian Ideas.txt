@@ -1,0 +1,49 @@
+MECHANICAL
+ 
+ Main Arm:
+  - Rack and Pinion setup for adjustable counterweight (potentially w/ servo)
+  - Protection from rotors/props to prevent injury**
+  - Lengthen main arm?
+  - Ensure pressed fit for MM bearing
+  - Hollow out arm for wiring harness?
+ 
+ Main Base:
+  - Integrate padding into arm to prevent bumping into base (or give arm more clearance)
+  - Firmly fasten system to a surface (or use very heavy base)**
+
+ Motor Mount (MM)
+  - Perforate MM arms for better lift + reduced weight
+  - Widen Holes for MPU050 sensor
+  - Mounting setup for ESCs on MM arms
+
+ Rotating Base:
+  - Widen rotating base
+  - Arduino / PCB mounting points
+  - Increase height for better propeller ground clearance
+ 
+ Other / Multiple Components
+  - Need to figure out mechanical pitch damper (Offload to software?)
+  - Mechincal locks for limiting DOF
+  - Mounting place and equipment for battery (rotating base?)
+  - Mechanical pitch leveling (for Gyro calibration)
+
+**Safety features
+  
+SOFTWARE
+ - Gyro Calibration
+ - Derivative Control
+ - Servo control of counterweight
+ - Create serial interface for changing tuning variables w/o recompiling every time 
+
+ELECTRICAL
+ - Silicone/Flexible Wires
+ - Better connectors for Arduino and sensors
+ - Route wires / Wiring harness?
+ - Control pinion w/ servo for precise electronic control of counterweight
+ - PCB for Arduino and peripherals
+ - Built-in power and USB ports in base for easy programming and recharge
+ - Estimate expected current/power draw and tailor battery capacity to suit needs of 1 day of lab usage
+
+
+   
+  

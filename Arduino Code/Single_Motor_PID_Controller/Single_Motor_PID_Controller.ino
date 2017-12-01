@@ -95,12 +95,9 @@ double updatePID(PID *pid, double currentState) {
   // Calculate the proportional term
   pTerm = pid->pGain * error;   
  
-  // Calculate the integral state with appropriate limiting
+  // Calculate the integral state with appropriate min/max constraints
   pid->iState += error;
-  if (pid->iState > pid->iMax)
-    pid->iState = pid->iMax;
-  else if (pid->iState < pid->iMin)
-    pid->iState = pid->iMin;
+  pid->iState = constrain(pid->iState, pid->iMin, pid-iMax);
 
   // Calculate the integral term
   iTerm  = pid->iGain * pid->iState;

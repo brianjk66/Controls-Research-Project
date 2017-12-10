@@ -1543,6 +1543,18 @@ Basic schematic elements and footprints for 0603, 1206, and PTH resistors.</desc
 <pinref part="POWER" gate="G$1" pin="1"/>
 <label x="-53.34" y="-45.72" size="1.778" layer="95" xref="yes"/>
 </segment>
+<segment>
+<pinref part="POWER_MOSFET" gate="G$1" pin="S"/>
+<wire x1="25.4" y1="81.28" x2="27.94" y2="81.28" width="0.1524" layer="91"/>
+<label x="27.94" y="81.28" size="1.778" layer="95" xref="yes"/>
+</segment>
+<segment>
+<wire x1="-33.02" y1="81.28" x2="-35.56" y2="81.28" width="0.1524" layer="91"/>
+<wire x1="-35.56" y1="81.28" x2="-35.56" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="-35.56" y1="83.82" x2="-38.1" y2="83.82" width="0.1524" layer="91"/>
+<label x="-33.02" y="81.28" size="1.778" layer="95" xref="yes"/>
+<pinref part="BATTERY_POWER" gate="G$1" pin="1"/>
+</segment>
 </net>
 <net name="INT" class="0">
 <segment>
@@ -1607,18 +1619,6 @@ Basic schematic elements and footprints for 0603, 1206, and PTH resistors.</desc
 <pinref part="BATTERY_POWER" gate="G$1" pin="2"/>
 </segment>
 <segment>
-<pinref part="POWER_MOSFET" gate="G$1" pin="D"/>
-<wire x1="27.94" y1="86.36" x2="25.4" y2="86.36" width="0.1524" layer="91"/>
-<label x="27.94" y="86.36" size="1.778" layer="95" xref="yes"/>
-</segment>
-</net>
-<net name="REGULATED_SUPPLY+" class="0">
-<segment>
-<pinref part="POWER_MOSFET" gate="G$1" pin="S"/>
-<wire x1="25.4" y1="81.28" x2="27.94" y2="81.28" width="0.1524" layer="91"/>
-<label x="27.94" y="81.28" size="1.778" layer="95" xref="yes"/>
-</segment>
-<segment>
 <wire x1="68.58" y1="99.06" x2="73.66" y2="99.06" width="0.1524" layer="91"/>
 <label x="68.58" y="99.06" size="1.778" layer="95" rot="R180" xref="yes"/>
 <pinref part="ESC1_POWER" gate="G$1" pin="2"/>
@@ -1638,18 +1638,16 @@ Basic schematic elements and footprints for 0603, 1206, and PTH resistors.</desc
 <pinref part="ESC1_POWER" gate="G$1" pin="1"/>
 </segment>
 <segment>
-<wire x1="-33.02" y1="81.28" x2="-35.56" y2="81.28" width="0.1524" layer="91"/>
-<wire x1="-35.56" y1="81.28" x2="-35.56" y2="83.82" width="0.1524" layer="91"/>
-<wire x1="-35.56" y1="83.82" x2="-38.1" y2="83.82" width="0.1524" layer="91"/>
-<label x="-33.02" y="81.28" size="1.778" layer="95" xref="yes"/>
-<pinref part="BATTERY_POWER" gate="G$1" pin="1"/>
-</segment>
-<segment>
 <wire x1="73.66" y1="68.58" x2="71.12" y2="68.58" width="0.1524" layer="91"/>
 <wire x1="71.12" y1="68.58" x2="71.12" y2="66.04" width="0.1524" layer="91"/>
 <wire x1="71.12" y1="66.04" x2="68.58" y2="66.04" width="0.1524" layer="91"/>
 <label x="68.58" y="66.04" size="1.778" layer="95" rot="R180" xref="yes"/>
 <pinref part="ESC2_POWER" gate="G$1" pin="1"/>
+</segment>
+<segment>
+<pinref part="POWER_MOSFET" gate="G$1" pin="D"/>
+<wire x1="27.94" y1="86.36" x2="25.4" y2="86.36" width="0.1524" layer="91"/>
+<label x="27.94" y="86.36" size="1.778" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="N$1" class="0">

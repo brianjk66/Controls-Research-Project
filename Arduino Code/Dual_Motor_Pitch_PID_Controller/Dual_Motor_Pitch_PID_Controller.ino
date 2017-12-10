@@ -1,5 +1,5 @@
 #include "I2Cdev.h"
-#include "Servo.h" 
+#include "Servo.h"
 
 #include "MPU6050_6Axis_MotionApps20.h"
 //#include "MPU6050.h" // not necessary if using MotionApps include file
@@ -11,9 +11,9 @@
 #endif
 
 /* Default Tuning Variables */
-#define P_GAIN          (0.1)  // Proportional gain
-#define I_GAIN          (0.004) // Integral gain
-#define D_GAIN          (0.3) // Derivative gain
+#define P_GAIN          (0.01)   // Proportional gain
+#define I_GAIN          (0.0005) // Integral gain
+#define D_GAIN          (0.3)   // Derivative gain
 #define MIN_I_TERM      (-40)   // Minimum Contribution of iTerm in PI controller (percentage of full throttle)
 #define MAX_I_TERM      (40)    // Maximum Contribution of iTerm in PI controller (percentage of full throttle)
 #define COMMAND         (0)     // Commanded/Requested pitch (in degrees from horizontal)
@@ -98,10 +98,7 @@ double updatePID(PID *pid, double currentState) {
  
   // Calculate the integral state with appropriate limiting
   pid->iState += error;
-  if (pid->iState > pid->iMax)
-    pid->iState = pid->iMax;
-  else if (pid->iState < pid->iMin)
-    pid->iState = pid->iMin;
+  pid->iState = constrain(pid->iState, pid->iMin, pid->iMax);
 
   // Calculate the integral term
   iTerm  = pid->iGain * pid->iState;
@@ -385,7 +382,7 @@ void loop() {
           counter++;
         } else {
           pitch = (ypr[1] * 180/M_PI);
-          drive = 10 * updatePID(&controller, pitch);
+          drive = 10 * cos(ypr[1]) * updatePID(&controller, pitch);
           setSpeed(&ESC1, drive);
           setSpeed(&ESC2, drive);
         }

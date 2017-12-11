@@ -11,9 +11,9 @@
 #endif
 
 /* Default Tuning Variables */
-#define P_GAIN          (0.01)   // Proportional gain
+#define P_GAIN          (0.1)   // Proportional gain
 #define I_GAIN          (0.0005) // Integral gain
-#define D_GAIN          (0.3)   // Derivative gain
+#define D_GAIN          (0.5)   // Derivative gain
 #define MIN_I_TERM      (-40)   // Minimum Contribution of iTerm in PI controller (percentage of full throttle)
 #define MAX_I_TERM      (40)    // Maximum Contribution of iTerm in PI controller (percentage of full throttle)
 #define COMMAND         (0)     // Commanded/Requested pitch (in degrees from horizontal)

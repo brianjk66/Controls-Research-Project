@@ -4342,7 +4342,7 @@ Iout: 100mA (MAX)
 <devices>
 <device name="" package="SOT-89">
 <connects>
-<connect gate="G$1" pin="GND" pad="2 2.1 2.2"/>
+<connect gate="G$1" pin="GND" pad="2 2.1 2.2" route="any"/>
 <connect gate="G$1" pin="IN" pad="3"/>
 <connect gate="G$1" pin="OUT" pad="1"/>
 </connects>
@@ -4372,7 +4372,7 @@ Rated Voltage: 5V
 <connects>
 <connect gate="G$1" pin="A" pad="3"/>
 <connect gate="G$1" pin="E" pad="1"/>
-<connect gate="G$1" pin="S" pad="2 2.1"/>
+<connect gate="G$1" pin="S" pad="2 2.1" route="any"/>
 </connects>
 <technologies>
 <technology name=""/>

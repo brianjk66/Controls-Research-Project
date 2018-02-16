@@ -12,5 +12,5 @@ void setup() {
 void loop() {
   sensorVal = analogRead(A0);
   Serial.printf("Sensor Reading: %d\t", sensorVal);
-  Serial.printf("Angle Reading: %f\n", (0.0507212*sensorVal)-113.899); 
+  Serial.printf("Angle Reading: %f\n", (0.0457*sensorVal)-185.64); 
 }

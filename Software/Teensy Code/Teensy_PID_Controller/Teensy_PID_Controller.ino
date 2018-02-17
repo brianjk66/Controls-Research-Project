@@ -2,13 +2,13 @@
 #include "TimerOne.h"
 
 /* Default Tuning Variables */
-#define P_GAIN          (2)     // Proportional gain
-#define I_GAIN          (0)     // Integral gain
-#define D_GAIN          (0)     // Derivative gain
+#define P_GAIN          (3)     // Proportional gain
+#define I_GAIN          (1.5)   // Integral gain
+#define D_GAIN          (0.3)   // Derivative gain
 #define MIN_I_TERM      (-250)  // Minimum Contribution of iTerm in PI controller
 #define MAX_I_TERM      (250)   // Maximum Contribution of iTerm in PI controller
 #define COMMAND         (0)     // Commanded/Requested pitch (in degrees from horizontal)
-#define PERIOD          (1000)  // Period between updates to PID controller in microseconds (must be at least 100)
+#define FREQUENCY       (100)   // Refresh rate of controlller (in Hz)
 
 /* Hardware Restrictions */
 #define MIN_ANGLE       (-60)
@@ -49,9 +49,12 @@ void updatePID() {
 
   // Measure rotary sensor value and filter with 10 point averager
   double runningSum = 0;
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 100; i++)
     runningSum += (0.0457 * analogRead(SENSOR_PIN)) - 185.64;
-  pitch = runningSum / 10;
+  //pitch = runningSum / 100;
+
+  // Round to nearest hundredth
+  pitch = round(runningSum) / 100.0;
   
   // Controller error is difference between input and current state
   double error = controller.input - pitch;
@@ -157,7 +160,7 @@ void setup() {
   controller.Kp         = P_GAIN;
   controller.Ki         = I_GAIN;
   controller.Kd         = D_GAIN;
-  controller.dt         = PERIOD / 1000000.0; // Divide period in us by 1,000,000 to get period in seconds
+  controller.dt         = 1.0 / FREQUENCY; // period = 1/frequency
   controller.iState     = 0;
   controller.old_error  = 0;
     
@@ -183,7 +186,7 @@ void setup() {
   while (Serial.available() && Serial.read()); // empty buffer again
 
   // Attach ISR for timer interrupt
-  Timer1.initialize(PERIOD);
+  Timer1.initialize(1000000/FREQUENCY); // 1,000,000/frequency = period (in microseconds)
   Timer1.attachInterrupt(updatePID);
 }
 
@@ -293,8 +296,6 @@ void loop() {
   }
 
   // Print pitch and drive info to serial
-  Serial.printf("Pitch:\t%f\t", pitch);
+  Serial.printf("Pitch:\t%.2f\t", pitch);
   Serial.printf("Drive:\t%d\n", drive);
-  // TODO: Remove this debug statement
-  //Serial.printf("dTerm:\t%f\n", controller.dGain * (pitch - controller.dState));
 }

@@ -32,7 +32,7 @@ void setSpeed(int input_speed){
 
 void setup() {
   // Initialize serial communication
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Configure MOSFET drive pin
   pinMode(DRIVE_PIN, OUTPUT);

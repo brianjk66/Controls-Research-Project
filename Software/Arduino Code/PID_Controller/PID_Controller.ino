@@ -16,8 +16,8 @@
 #define MAX_FREQ        (1000) // Maximum refresh rate (in Hz)
 
 /* Pin Numbers */
-#define ESC_PIN         (3)    // PWM pin for signaling ESC
-#define DRIVE_PIN       (2)     // Drive pin for power MOSFET
+#define ESC_PIN         (6)   // PWM pin for signaling ESC
+#define DRIVE_PIN       (10)  // Drive pin for power MOSFET
 #define SENSOR_PIN      (A0)    // Pin for reading sensor values
 
 /* See this link for more info:
@@ -50,7 +50,7 @@ void updatePID() {
   // Measure rotary sensor value and filter with 10 point averager
   double runningSum = 0;
   for (int i = 0; i < 10; i++)
-    runningSum += (0.3656 * analogRead(SENSOR_PIN)) - 185.64;
+    runningSum -= (0.3656 * analogRead(SENSOR_PIN)) - 185.64;
   //pitch = runningSum / 100;
 
   // Round to nearest hundredth

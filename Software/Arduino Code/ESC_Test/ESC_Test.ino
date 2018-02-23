@@ -3,8 +3,8 @@
 
 #include "Servo.h" 
 
-#define ESC_PIN         (3)  // PWM pin for signaling ESC
-#define DRIVE_PIN       (2)   // Drive pin for power MOSFET
+#define ESC_PIN         (6)  // PWM pin for signaling ESC
+#define DRIVE_PIN       (10)   // Drive pin for power MOSFET
 
 Servo ESC;  
 int speed = 0;

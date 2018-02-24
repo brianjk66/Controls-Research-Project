@@ -20,21 +20,24 @@
 #define DRIVE_PIN       (10)  // Drive pin for power MOSFET
 #define SENSOR_PIN      (A0)    // Pin for reading sensor values
 
+/* Filter buffer size */
+#define BUFFER_SIZE     (2)
+
 /* See this link for more info:
    https://www.embedded.com/design/prototyping-and-development/4211211/PID-without-a-PhD
 */
 typedef struct PID_t {
-  double        input;    // Input to controller (requested value)
-  double        Ki;       // Integral gain
-  double        Kp;       // Proportional gain
-  double        Kd;       // Derivative gain
-  double        dt;       // Period between updates (in seconds)
-  double        old_error;// Last error value
-  double        iState;   // Integrator state (accumulated error)
+  float   input;      // Input to controller (requested value)
+  float   Ki;         // Integral gain
+  float   Kp;         // Proportional gain
+  float   Kd;         // Derivative gain
+  float   dt;         // Period between updates (in seconds)
+  float   old_error;  // Last error value
+  float   iState;     // Integrator state (accumulated error)
 } PID;
 
 volatile PID controller; // PID controller for the system
-volatile double pitch;   // Measured pitch
+volatile float pitch;   // Measured pitch
 Servo ESC;               // ESC to drive motor
 volatile int drive;      // Drive signal value fed to ESC
 
@@ -42,22 +45,37 @@ volatile int drive;      // Drive signal value fed to ESC
 // ===                    HELPER FUNCTIONS                      ===
 // ================================================================
 
+float filterBuffer[BUFFER_SIZE] = {0};
+float filteredVal = 0.0;
+int index = 0;
+
+/* Lowpass moving average filter to smooth analog sensor readings */
+float filter(float value) {
+  // Remove oldest value from moving average
+  filteredVal -= filterBuffer[index] / BUFFER_SIZE;
+
+  // Add new value to buffer and incrememnt index
+  filterBuffer[index++] = value;
+
+  // Add new value to moving average
+  filteredVal += value / BUFFER_SIZE;
+
+  // Prevent index out of bounds errors
+  index %= BUFFER_SIZE;
+
+  return filteredVal;
+}
+
 /* Update PID output signal using current system state */
 void updatePID() {
   // P, I, & D terms
-  double pTerm, iTerm, dTerm;
+  float pTerm, iTerm, dTerm;
 
-  // Measure rotary sensor value and filter with 10 point averager
-  double runningSum = 0;
-  for (int i = 0; i < 10; i++)
-    runningSum -= (0.3656 * analogRead(SENSOR_PIN)) - 185.64;
-  //pitch = runningSum / 100;
-
-  // Round to nearest hundredth
-  pitch = round(10 * runningSum) / 100.0;
+  // Measure and filter rotary sensor value
+  pitch = filter((-0.3656 * analogRead(SENSOR_PIN)) + 185.64);
   
   // Controller error is difference between input and current state
-  double error = controller.input - pitch;
+  float error = controller.input - pitch;
 
   // Calculate the proportional term
   pTerm = controller.Kp * error;
@@ -111,10 +129,6 @@ void setSpeed(Servo *ESC, int drive) {
 
 /* Change PID tuning parameters via Serial interface */
 void tuneController(volatile PID *pid) {
-  // Reset controller state
-  pid->iState = 0;    // Reset the integrator state
-  pid->old_error = 0; // Reset the derivative state
-
   Serial.print("Set Proportional Gain (Current Value: ");
   Serial.print(pid->Kp);
   Serial.print(")\n"); 
@@ -167,19 +181,19 @@ void setup() {
   controller.iState     = 0;
   controller.old_error  = 0;
     
-  Serial.print("Send any character to calibrate ESC or 's' to skip...\n");
+  Serial.print("Send any character to arm ESC or 'c' to calibrate...\n");
   while (Serial.available() && Serial.read()); // empty buffer
   while (!Serial.available());                 // wait for data
-  if (Serial.read() == 's') {
-    // Only arm ESC if user opted to skip calibration
-    Serial.print("Arming ESC... ");
-    arm(&ESC);
-    Serial.print("Arming complete\n");
-  } else {
-    // Otherwise, perform full calibration
+  if (Serial.read() == 'c') {
+    // Only calibrate ESC if user opted for it
     Serial.print("Calibrating ESC... ");
     calibrate(&ESC);
     Serial.print("Calibration complete\n");
+  } else {
+    // Otherwise, only arm ESC
+    Serial.print("Arming ESC... ");
+    arm(&ESC);
+    Serial.print("Arming complete\n");
   }
 
   // Wait for ready
@@ -209,6 +223,11 @@ void loop() {
       // Reset controller state
       controller.iState = 0;    // Reset the integrator state
       controller.old_error = 0; // Reset the derivative state
+
+      // Reset filter state
+      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
+      filteredVal = 0;
+      index = 0;
       
       // wait for ready
       Serial.print("Send any character to resume...\n");
@@ -225,6 +244,15 @@ void loop() {
       Serial.read();                // Flush buffer
       setSpeed(&ESC, 0);            // Kill power to the motor(s)
 
+      // Reset controller state
+      controller.iState = 0;    // Reset the integrator state
+      controller.old_error = 0; // Reset the derivative state
+
+      // Reset filter state
+      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
+      filteredVal = 0;
+      index = 0;
+
       // Call tuning subroutine
       tuneController(&controller);
 
@@ -240,6 +268,11 @@ void loop() {
       // Reset controller state
       controller.iState = 0;    // Reset the integrator state
       controller.old_error = 0; // Reset the derivative state
+
+      // Reset filter state
+      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
+      filteredVal = 0;
+      index = 0;
 
       // Call calibration subroutine
       Serial.print("Calibrating ESC... ");
@@ -264,6 +297,11 @@ void loop() {
       // Reset controller state
       controller.iState = 0;    // Reset the integrator state
       controller.old_error = 0; // Reset the derivative state
+
+      // Reset filter state
+      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
+      filteredVal = 0;
+      index = 0;
 
       // Ask user to set new refresh rate
       Serial.print("Set new refresh rate in Hz (1-");
@@ -291,7 +329,7 @@ void loop() {
     // Otherwise, treat input as new pitch request
     else {
       // See if user sent new pitch request
-      double newAngle = Serial.parseFloat();
+      float newAngle = Serial.parseFloat();
 
       // If new angle is within acceptable range, update input angle
       if (newAngle >= MIN_ANGLE && newAngle <= MAX_ANGLE) {

@@ -374,17 +374,15 @@ will be further integrated into the Sparkfun Library for other footprints.  It c
 <pad name="A5" x="1.27" y="19.05" drill="0.8" shape="long" rot="R180"/>
 <pad name="A6" x="1.27" y="16.51" drill="0.8" shape="long" rot="R180"/>
 <pad name="A7" x="1.27" y="13.97" drill="0.8" shape="long" rot="R180"/>
-<wire x1="17.78" y1="43.18" x2="17.78" y2="0" width="0.127" layer="21"/>
-<wire x1="17.78" y1="0" x2="0" y2="0" width="0.127" layer="21"/>
-<wire x1="0" y1="0" x2="0" y2="43.18" width="0.127" layer="21"/>
-<wire x1="5.08" y1="44.45" x2="12.7" y2="44.45" width="0.127" layer="21"/>
-<wire x1="12.7" y1="44.45" x2="12.7" y2="43.18" width="0.127" layer="21"/>
-<wire x1="12.7" y1="43.18" x2="12.7" y2="36.195" width="0.127" layer="21"/>
+<wire x1="17.78" y1="40.64" x2="17.78" y2="1.27" width="0.127" layer="21"/>
+<wire x1="17.78" y1="1.27" x2="0" y2="1.27" width="0.127" layer="21"/>
+<wire x1="0" y1="1.27" x2="0" y2="40.64" width="0.127" layer="21"/>
+<wire x1="5.08" y1="40.64" x2="12.7" y2="40.64" width="0.127" layer="21"/>
+<wire x1="12.7" y1="40.64" x2="12.7" y2="36.195" width="0.127" layer="21"/>
 <wire x1="12.7" y1="36.195" x2="5.08" y2="36.195" width="0.127" layer="21"/>
-<wire x1="5.08" y1="36.195" x2="5.08" y2="43.18" width="0.127" layer="21"/>
-<wire x1="5.08" y1="43.18" x2="5.08" y2="44.45" width="0.127" layer="21"/>
-<wire x1="0" y1="43.18" x2="5.08" y2="43.18" width="0.127" layer="21"/>
-<wire x1="12.7" y1="43.18" x2="17.78" y2="43.18" width="0.127" layer="21"/>
+<wire x1="5.08" y1="36.195" x2="5.08" y2="40.64" width="0.127" layer="21"/>
+<wire x1="0" y1="40.64" x2="5.08" y2="40.64" width="0.127" layer="21"/>
+<wire x1="12.7" y1="40.64" x2="17.78" y2="40.64" width="0.127" layer="21"/>
 <text x="8.89" y="20.32" size="2.54" layer="25" align="center">Arduino
 
 

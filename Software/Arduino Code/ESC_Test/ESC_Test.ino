@@ -1,10 +1,10 @@
-// Simple program to test the Teensy's
+// Simple program to test the Arduino's
 // ability to control ESCs/Brushless Motors
 
 #include "Servo.h" 
 
-#define ESC_PIN         (6)  // PWM pin for signaling ESC
-#define DRIVE_PIN       (10)   // Drive pin for power MOSFET
+#define ESC_PIN         (6)   // PWM pin for signaling ESC
+#define DRIVE_PIN       (10)  // Drive pin for power MOSFET
 
 Servo ESC;  
 int speed = 0;
@@ -32,22 +32,29 @@ void setSpeed(int input_speed){
 
 void setup() {
   // Initialize serial communication
-  Serial.begin(115200);
+  Serial.begin(2000000);
 
   // Configure MOSFET drive pin
   pinMode(DRIVE_PIN, OUTPUT);
   digitalWrite(DRIVE_PIN, LOW);
-  
-  ESC.attach(ESC_PIN); // Adds ESC to certain pin.
+
+  // Attach ESC to designated pin.
+  ESC.attach(ESC_PIN);
+
+  // Arm ESC
+  arm();
 }
 
 void loop() {
   if (Serial.available()) {
-    if (Serial.peek() == ' ') {
+    // Check for calibration request
+    if (Serial.peek() == 'c') {
       Serial.println("Callibrating ESC");
       callibrate();
       Serial.read();
-    } else {
+    }
+    // Otherwise, interpret as new throttle value
+    else {
       speed = Serial.parseInt();
       Serial.println(speed);
       setSpeed(speed);

@@ -1,6 +1,8 @@
 // Simple program to test the Arduino's
 // analogRead of the rotary position sensor 
 
+#define SENSOR_PIN    (A0)
+
 #define BUFFER_SIZE   (2)
 
 int sensorVal;
@@ -9,7 +11,10 @@ volatile float filterBuffer[BUFFER_SIZE] = {0};
 volatile float filteredVal = 0.0;
 volatile int index = 0;
 
-/* Lowpass moving average filter to smooth analog sensor readings */
+/*
+ * Lowpass moving average filter to
+ * smooth analog sensor readings
+ */
 float filter(float value) {
   // Remove oldest value from moving average
   filteredVal -= filterBuffer[index] / BUFFER_SIZE;
@@ -32,7 +37,7 @@ void setup() {
 }
 
 void loop() {
-  sensorVal = analogRead(A0);
+  sensorVal = analogRead(SENSOR_PIN);
   Serial.print("Sensor Reading: ");
   Serial.print(sensorVal);
   Serial.print("\tFiltered Angle Reading: ");

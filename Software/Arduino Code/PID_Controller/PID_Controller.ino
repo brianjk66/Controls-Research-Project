@@ -2,30 +2,28 @@
 #include "MsTimer2.h"
 
 /* Default Tuning Variables */
-#define P_GAIN          (3)     // Proportional gain
+#define P_GAIN          (3)   // Proportional gain
 #define I_GAIN          (1.5)   // Integral gain
-#define D_GAIN          (0.3)   // Derivative gain
+#define D_GAIN          (0.4)   // Derivative gain
 #define MIN_I_TERM      (-250)  // Minimum Contribution of iTerm in PI controller
 #define MAX_I_TERM      (250)   // Maximum Contribution of iTerm in PI controller
-#define COMMAND         (0)     // Commanded/Requested pitch (in degrees from horizontal)
+#define COMMAND         (-5)    // Commanded/Requested pitch (in degrees from horizontal)
 #define FREQUENCY       (100)   // Refresh rate of controlller (in Hz)
 
 /* Hardware Restrictions */
-#define MIN_ANGLE       (-60)
+#define MIN_ANGLE       (-65)
 #define MAX_ANGLE       (30)
 #define MAX_FREQ        (1000) // Maximum refresh rate (in Hz)
 
 /* Pin Numbers */
 #define ESC_PIN         (6)   // PWM pin for signaling ESC
 #define DRIVE_PIN       (10)  // Drive pin for power MOSFET
-#define SENSOR_PIN      (A0)    // Pin for reading sensor values
+#define SENSOR_PIN      (A0)  // Pin for reading sensor values
 
 /* Filter buffer size */
 #define BUFFER_SIZE     (2)
 
-/* See this link for more info:
-   https://www.embedded.com/design/prototyping-and-development/4211211/PID-without-a-PhD
-*/
+/* Controller struct */
 typedef struct PID_t {
   float   input;      // Input to controller (requested value)
   float   Ki;         // Integral gain
@@ -36,20 +34,24 @@ typedef struct PID_t {
   float   iState;     // Integrator state (accumulated error)
 } PID;
 
-volatile PID controller; // PID controller for the system
-volatile float pitch;   // Measured pitch
-Servo ESC;               // ESC to drive motor
-volatile int drive;      // Drive signal value fed to ESC
+volatile PID controller;  // PID controller for the system
+volatile float pitch;     // Measured pitch
+Servo ESC;                // ESC to drive motor
+volatile int drive;       // Drive signal value fed to ESC
+
+volatile bool updatedPID; // Flag to indicate whenever controller is updated
+
+float filterBuffer[BUFFER_SIZE];  // Array for moving average filter
+float filteredVal;                // Current filtered valued
+int index;                        // Current index of filterBuffer
 
 // ================================================================
 // ===                    HELPER FUNCTIONS                      ===
 // ================================================================
 
-float filterBuffer[BUFFER_SIZE] = {0};
-float filteredVal = 0.0;
-int index = 0;
-
-/* Lowpass moving average filter to smooth analog sensor readings */
+/*
+ * Lowpass moving average filter to smooth analog sensor readings
+ */
 float filter(float value) {
   // Remove oldest value from moving average
   filteredVal -= filterBuffer[index] / BUFFER_SIZE;
@@ -66,7 +68,31 @@ float filter(float value) {
   return filteredVal;
 }
 
-/* Update PID output signal using current system state */
+/* 
+ * Reset the state of controller, filter, and pitch reading
+ * Should be invoked whenever the system is stopped or paused
+ */
+void resetSystem() {
+  // Reset drive signal
+  drive = 0;
+
+  // Reset updatedPID flag
+  updatedPID = false;
+  
+  // Reset and refill filter buffer to avoid throttle spikes
+  for (int i = 0; i < BUFFER_SIZE; i++)
+    pitch = filter((-0.3656 * analogRead(SENSOR_PIN)) + 185.64);
+
+  // Reset the integrator state
+  controller.iState = 0;
+
+  // Re-initialize the derivative state to prevent derivative spikes
+  controller.old_error = controller.input - pitch;
+}
+
+/*
+ * Update PID output signal using current system state
+ */
 void updatePID() {
   // P, I, & D terms
   float pTerm, iTerm, dTerm;
@@ -99,59 +125,75 @@ void updatePID() {
 
   // Send new drive signal to ESC
   setSpeed(&ESC, drive);
+
+  // Set updatedPID flag
+  updatedPID = true;
 }
 
-/* Arm ESC for first use upon startup */
+/*
+ * Arm ESC for first use upon startup
+ */
 void arm(Servo *ESC) {
+  Serial.print("Arming ESC... ");
   digitalWrite(DRIVE_PIN, LOW);   // Disconnect ESC from power
   delay(500);                     // Wait 500ms for ESC to power down
   setSpeed(ESC, 0);               // Set speed to 0
   digitalWrite(DRIVE_PIN, HIGH);  // Reconnect ESC to power
-  delay(500);                     // 500ms delay for ESC to respond
+  delay(2500);                    // 2.5 second delay for ESC to respond
+  Serial.println("Arming complete");
 }
 
-/* Calibrate ESC's PWM range for first use */
+/*
+ * Calibrate ESC's PWM range for first use
+ */
 void calibrate(Servo *ESC) {
+  Serial.print("Calibrating ESC... ");
   digitalWrite(DRIVE_PIN, LOW);   // Disconnect ESC from power
   delay(500);                     // Wait 500ms
   setSpeed(ESC, 1000);            // Request full speed
   digitalWrite(DRIVE_PIN, HIGH);  // Reconnect ESC to power
-  delay(5000);                    // Wait 5s
+  delay(5000);                    // Wait 5 seconds
   setSpeed(ESC, 0);               // Request 0 speed
+  delay(8000);                    // Wait 8 seconds
+  Serial.println("Calibration complete");
 }
 
-/* Drive ESC with 0-1000 drive signal */
+/*
+ * Drive ESC with 0-1000 drive signal
+ */
 void setSpeed(Servo *ESC, int drive) {
   // Scale drive signal to ESC's range of accepted values
   int us = map(drive, 0, 1000, 1000, 2000); //Scale drive signal to ESC's accepted range
   ESC->writeMicroseconds(us);
 }
 
-/* Change PID tuning parameters via Serial interface */
+/*
+ * Change PID tuning parameters via Serial interface
+ */
 void tuneController(volatile PID *pid) {
   Serial.print("Set Proportional Gain (Current Value: ");
   Serial.print(pid->Kp);
-  Serial.print(")\n"); 
+  Serial.println(")"); 
   while (Serial.available() && Serial.read());  // empty buffer
   while (!Serial.available());                  // wait for data
   pid->Kp = Serial.parseFloat();                // Set new proportial gain
 
   Serial.print("Set Integrator Gain (Current Value: ");
   Serial.print(pid->Ki);
-  Serial.print(")\n");
+  Serial.println(")");
   while (Serial.available() && Serial.read());  // empty buffer
   while (!Serial.available());                  // wait for data
   pid->Ki = Serial.parseFloat();                // Set new integral gain
 
   Serial.print("Set Derivative Gain (Current Value: ");
   Serial.print(pid->Kd);
-  Serial.print(")\n");
+  Serial.println(")");
   while (Serial.available() && Serial.read());  // empty buffer
   while (!Serial.available());                  // wait for data
   pid->Kd = Serial.parseFloat();                // Set new derivative gain
 
-  // wait for ready
-  Serial.print("New values set. Send any character to resume...\n");
+  // Wait for ready
+  Serial.println("New values set. Send any character to resume...");
   while (Serial.available() && Serial.read());  // empty buffer
   while (!Serial.available());                  // wait for data
   while (Serial.available() && Serial.read());  // empty buffer again
@@ -178,32 +220,30 @@ void setup() {
   controller.Ki         = I_GAIN;
   controller.Kd         = D_GAIN;
   controller.dt         = 1.0 / FREQUENCY; // period = 1/frequency
-  controller.iState     = 0;
-  controller.old_error  = 0;
     
-  Serial.print("Send any character to arm ESC or 'c' to calibrate...\n");
+  Serial.println("Send any character to arm ESC or 'c' to calibrate...");
   while (Serial.available() && Serial.read()); // empty buffer
   while (!Serial.available());                 // wait for data
+  
   if (Serial.read() == 'c') {
     // Only calibrate ESC if user opted for it
-    Serial.print("Calibrating ESC... ");
     calibrate(&ESC);
-    Serial.print("Calibration complete\n");
   } else {
     // Otherwise, only arm ESC
-    Serial.print("Arming ESC... ");
     arm(&ESC);
-    Serial.print("Arming complete\n");
   }
 
   // Wait for ready
-  Serial.print("\nSend any character to begin...\n");
+  Serial.println("\nSend any character to begin...");
   while (Serial.available() && Serial.read()); // empty buffer
   while (!Serial.available());                 // wait for data
   while (Serial.available() && Serial.read()); // empty buffer again
 
+  // Reset system parameters before starting to avoid unpredictable behavior 
+  resetSystem();
+
   // Attach ISR for timer interrupt
-  MsTimer2::set(1000/FREQUENCY, updatePID); // 1,000/frequency = period (in milliseconds)
+  MsTimer2::set(1000/FREQUENCY, updatePID); // period (ms) = 1,000/frequency
   MsTimer2::start();
 }
 
@@ -212,116 +252,90 @@ void setup() {
 // ================================================================
 
 void loop() {
-  // See if user wants to tune controller or change commanded angle
+  // Check for user input
   if (Serial.available()) {
     // 'p' for pause
     if (Serial.peek() == 'p') {
-      MsTimer2::stop();     // Disable interrupts
-      Serial.read();                // Flush buffer
-      setSpeed(&ESC, 0);            // Kill power to the motor(s)
-
-      // Reset controller state
-      controller.iState = 0;    // Reset the integrator state
-      controller.old_error = 0; // Reset the derivative state
-
-      // Reset filter state
-      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
-      filteredVal = 0;
-      index = 0;
+      MsTimer2::stop();   // Disable interrupts
+      Serial.read();      // Flush buffer
+      setSpeed(&ESC, 0);  // Kill power to the motor(s)
       
       // wait for ready
-      Serial.print("Send any character to resume...\n");
+      Serial.println("Send any character to resume...");
       while (Serial.available() && Serial.read()); // empty buffer
       while (!Serial.available());                 // wait for data
       while (Serial.available() && Serial.read()); // empty buffer again
+
+      // Reset system parameters before resuming to avoid unpredictable behavior 
+      resetSystem();
 
       // Re-enable interrupts and continue
       MsTimer2::start();
     }
     // 't' for tune
     else if (Serial.peek() == 't') {
-      MsTimer2::stop();     // Disable interrupts
-      Serial.read();                // Flush buffer
-      setSpeed(&ESC, 0);            // Kill power to the motor(s)
-
-      // Reset controller state
-      controller.iState = 0;    // Reset the integrator state
-      controller.old_error = 0; // Reset the derivative state
-
-      // Reset filter state
-      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
-      filteredVal = 0;
-      index = 0;
+      MsTimer2::stop();   // Disable interrupts
+      Serial.read();      // Flush buffer
+      setSpeed(&ESC, 0);  // Kill power to the motor(s)
 
       // Call tuning subroutine
       tuneController(&controller);
+
+      // Reset system parameters before resuming to avoid unpredictable behavior 
+      resetSystem();
 
       // Re-enable interrupts and continue
       MsTimer2::start();
     }
     // 'c' for calibrate
     else if (Serial.peek() == 'c') {
-      MsTimer2::stop();     // Disable interrupts
-      Serial.read();                // Flush buffer
-      setSpeed(&ESC, 0);            // Kill power to the motor(s)
-
-      // Reset controller state
-      controller.iState = 0;    // Reset the integrator state
-      controller.old_error = 0; // Reset the derivative state
-
-      // Reset filter state
-      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
-      filteredVal = 0;
-      index = 0;
+      MsTimer2::stop();   // Disable interrupts
+      Serial.read();      // Flush buffer
+      setSpeed(&ESC, 0);  // Kill power to the motor(s)
 
       // Call calibration subroutine
-      Serial.print("Calibrating ESC... ");
       calibrate(&ESC);
-      Serial.print("Calibration complete\n");
 
       // wait for ready
-      Serial.print("Send any character to resume...\n");
+      Serial.println("Send any character to resume...");
       while (Serial.available() && Serial.read()); // empty buffer
       while (!Serial.available());                 // wait for data
       while (Serial.available() && Serial.read()); // empty buffer again
+
+      // Reset system parameters before resuming to avoid unpredictable behavior 
+      resetSystem();
 
       // Re-enable interrupts and continue
       MsTimer2::start();
     }
     // 'f' for frequency
     else if (Serial.peek() == 'f') {
-      MsTimer2::stop();     // Disable interrupts
-      Serial.read();                // Flush buffer
-      setSpeed(&ESC, 0);            // Kill power to the motor(s)
-
-      // Reset controller state
-      controller.iState = 0;    // Reset the integrator state
-      controller.old_error = 0; // Reset the derivative state
-
-      // Reset filter state
-      for (int i = 0; i < BUFFER_SIZE; i++) filterBuffer[i] = 0;
-      filteredVal = 0;
-      index = 0;
+      MsTimer2::stop();   // Disable interrupts
+      Serial.read();      // Flush buffer
+      setSpeed(&ESC, 0);  // Kill power to the motor(s)
 
       // Ask user to set new refresh rate
       Serial.print("Set new refresh rate in Hz (1-");
       Serial.print(MAX_FREQ);
-      Serial.print(")\n");
+      Serial.println(")");
       while (Serial.available() && Serial.read());  // empty buffer
       while (!Serial.available());                  // wait for data
       int newFreq = Serial.parseInt();              // Read user input
       
       // Check for valid new frequency
       if (newFreq > 0 && newFreq <= MAX_FREQ) {
-        controller.dt = 1.0 / newFreq;        // Set new controller dt
-        MsTimer2::set(1000 / newFreq, updatePID);  // Set new interrupt period (in milliseconds)
+        controller.dt = 1.0 / newFreq;            // Set new controller dt
+        MsTimer2::set(1000 / newFreq, updatePID); // Set new interrupt period (in milliseconds)
       }
       
       // wait for ready
-      Serial.print("Send any character to resume...\n");
+      Serial.println("Send any character to resume...");
       while (Serial.available() && Serial.read()); // empty buffer
       while (!Serial.available());                 // wait for data
       while (Serial.available() && Serial.read()); // empty buffer again
+
+      // Reset system parameters before resuming to avoid unpredictable behavior 
+      resetSystem();
 
       // Re-enable interrupts and continue
       MsTimer2::start();
@@ -333,14 +347,20 @@ void loop() {
 
       // If new angle is within acceptable range, update input angle
       if (newAngle >= MIN_ANGLE && newAngle <= MAX_ANGLE) {
+        MsTimer2::stop();   // Disable interrupts
+        controller.old_error = newAngle - pitch;
         controller.input = newAngle;
+        MsTimer2::start();  // Re-enable interrupts and continue
       }
     }
   }
 
-  // Print pitch and drive info to serial
-  Serial.print("Pitch:\t");
-  Serial.print(pitch, 2);
-  Serial.print("\tDrive:\t");
-  Serial.println(drive);
+  // Print pitch and drive info to serial after PID updates
+  if (updatedPID) {
+    Serial.print("Pitch:\t");
+    Serial.print(pitch, 2);
+    Serial.print("\tDrive:\t");
+    Serial.println(drive);
+    updatedPID = false;
+  }
 }

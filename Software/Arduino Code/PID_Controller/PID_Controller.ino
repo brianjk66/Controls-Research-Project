@@ -357,10 +357,11 @@ void loop() {
 
   // Print pitch and drive info to serial after PID updates
   if (updatedPID) {
-    Serial.print("Pitch:\t");
     Serial.print(pitch, 2);
-    Serial.print("\tDrive:\t");
-    Serial.println(drive);
+    Serial.print("\t");
+    Serial.print(drive);
+    Serial.print("\t");
+    Serial.println(controller.input);
     updatedPID = false;
   }
 }

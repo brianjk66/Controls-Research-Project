@@ -2,7 +2,6 @@
 // analogRead of the rotary position sensor 
 
 #define SENSOR_PIN    (A0)
-
 #define BUFFER_SIZE   (2)
 
 int sensorVal;

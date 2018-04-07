@@ -2,12 +2,12 @@
 #include "MsTimer2.h"
 
 /* Default Tuning Variables */
-#define P_GAIN          (3)   // Proportional gain
+#define P_GAIN          (3)     // Proportional gain
 #define I_GAIN          (1.5)   // Integral gain
 #define D_GAIN          (0.4)   // Derivative gain
 #define MIN_I_TERM      (-250)  // Minimum Contribution of iTerm in PI controller
 #define MAX_I_TERM      (250)   // Maximum Contribution of iTerm in PI controller
-#define COMMAND         (-5)    // Commanded/Requested pitch (in degrees from horizontal)
+#define COMMAND         (0)     // Commanded/Requested pitch (in degrees from horizontal)
 #define FREQUENCY       (100)   // Refresh rate of controlller (in Hz)
 
 /* Hardware Restrictions */
@@ -107,7 +107,6 @@ void updatePID() {
   pTerm = controller.Kp * error;
 
   // Calculate the integral state with appropriate min/max constraints
-  // TODO: Look into anti-windup code
   controller.iState += error * controller.dt;
   controller.iState = constrain(controller.iState, MIN_I_TERM/controller.Ki, MAX_I_TERM/controller.Ki);
 

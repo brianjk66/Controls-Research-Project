@@ -40,5 +40,5 @@ void loop() {
   Serial.print("Sensor Reading: ");
   Serial.print(sensorVal);
   Serial.print("\tFiltered Angle Reading: ");
-  Serial.println((filter(-0.3656*sensorVal)+185.64), 2);
+  Serial.println(filter(-0.3656*sensorVal+185.64), 2);
 }
